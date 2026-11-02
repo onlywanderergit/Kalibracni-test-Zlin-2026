@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalibrační Test – Scout Mindset</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 { font-size: 1.8rem; margin-bottom: 10px; color: #0f172a; }
+    p.intro { color: var(--text-light); margin-bottom: 24px; }
+
+    .instructions {
+      background-color: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .question-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background-color: #fff;
+    }
+
+    .question-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .options-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-option {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: #f1f5f9;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-option:hover { background: #e2e8f0; }
+    .btn-option.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .confidence-section {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .confidence-label {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-bottom: 6px;
+    }
+
+    .confidence-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-conf {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .btn-conf:hover { background: #f8fafc; }
+    .btn-conf.selected {
+      background: #09090b;
+      color: white;
+      border-color: #09090b;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover { background: var(--primary-hover); }
+
+    /* Results styling */
+    #results { display: none; margin-top: 30px; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .chart-container {
+      position: relative;
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    canvas {
+      max-width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .table-results {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .table-results th, .table-results td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: center;
+    }
+
+    .table-results th {
+      background-color: #f1f5f9;
+    }
+
+    .reset-btn {
+      margin-top: 20px;
+      background: #64748b;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      margin-top: 10px;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Kalibrační Test Sebevědomí</h1>
+  <p class="intro">Založeno na cvičení kalibrace dle knihy <i>The Scout Mindset</i> (Julia Galef).</p>
+
+  <div class="instructions">
+    <strong>Jak postupovat:</strong>
+    <ol style="margin-left: 20px; margin-top: 6px;">
+      <li>Pro každou otázku zvolte odpověď, kterou považujete za pravděpodobnější.</li>
+      <li>Vyberte úroveň své jistoty od <strong>55 %</strong> (čistý odhad) po <strong>95 %</strong> (téměř jistota).</li>
+      <li>Cílem není vědět vše, ale <strong>přesně odhadnout vlastní míru znalostí</strong>. Pokud udáte 75% jistotu u 10 otázek, měli byste mít pravdu přesně u 7–8 z nich.</li>
+    </ol>
+  </div>
+
+  <form id="quiz-form">
+    <div id="questions-container"></div>
+    <div id="error-message" class="error-msg">Prosím zodpovězte všechny otázky a zvolte u nich úroveň jistoty.</div>
+    <button type="button" class="submit-btn" onclick="calculateResults()">Vyhodnotit výsledky</button>
+  </form>
+
+  <div id="results">
+    <h2>Výsledky Kalibrace</h2>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="overall-accuracy">0%</div>
+        <div class="stat-label">Celková úspěšnost</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="brier-score">0.00</div>
+        <div class="stat-label">Brierovo skóre (nižší = lepší, 0 = ideál)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="calibration-summary">-</div>
+        <div class="stat-label">Diagnóza úsudku</div>
+      </div>
+    </div>
+
+    <h3>Graf Kalibrace</h3>
+    <p style="font-size: 0.9rem; color: var(--text-light);">Ideální kalibrace sleduje čárkovanou úhlopříčku.</p>
+    <div class="chart-container">
+      <canvas id="calibrationChart" width="500" height="400"></canvas>
+    </div>
+
+    <h3>Detailní rozpad podle jistoty</h3>
+    <table class="table-results">
+      <thead>
+        <tr>
+          <th>Míra jistoty</th>
+          <th>Počet odpovědí</th>
+          <th>Správně</th>
+          <th>Skutečná úspěšnost</th>
+          <th>Cílová úspěšnost</th>
+        </tr>
+      </thead>
+      <tbody id="breakdown-body"></tbody>
+    </table>
+
+    <button type="button" class="submit-btn reset-btn" onclick="resetQuiz()">Zkusit znovu</button>
+  </div>
+</div>
+
+<script>
+const questionsData = [
+  // Okruh 1: Fakta o zvířatech (Pravda / Nepravda)
+  { q: "Slon africký je největší žijící savec na planetě Zemi.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Mořské vydry se při spánku někdy drží za tlapky, aby neodplavaly.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Savci a dinosauři žili na Zemi ve stejné době.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Medvědi neumí lézt na stromy.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Velbloudi uchovávají ve svých hrbech zásoby vody.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Plameňáci jsou růžoví díky konzumaci drobných korýšů (krevet).", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Ptakopysk je jediný žijící savec, který klade vejce.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Mula je kříženec oslího samce a koňské klisny.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Chobotnice má celkem tři srdce.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Netopýři jsou úplně slepí.", options: ["Pravda", "Nepravda"], correct: 1 },
+
+  // Okruh 2: Osobnosti & Historie (Kdo se narodil / existoval dříve?)
+  { q: "Kdo se narodil dříve?", options: ["SirYakari", "Gejmr"], correct: 1 },
+  { q: "Kdo se narodil dříve?", options: ["Tary", "FIZI"], correct: 0 },
+  { q: "Kdo se narodil dříve?", options: ["Andrej Babiš", "Petr Pavel"], correct: 0 },
+  { q: "Kdo se narodil dříve?", options: ["Kopé", "Martin"], correct: 1 },
+  { q: "Kdo se narodil dříve?", options: ["Kopé", "Marta"], correct: 1 },
+  { q: "Kdo se narodil dříve?", options: ["Tonda Hnila", "David Hnila"], correct: 0 },
+  { q: "Kdo žil/existoval dříve?", options: ["Tyranosaurus", "Stegosaurus"], correct: 1 },
+  { q: "Kdo vznikl/narodil se dříve?", options: ["Michal", "Harry Potter"], correct: 1 },
+  { q: "Kdo se narodil dříve?", options: ["Přemysl Otakar II.", "Václav II."], correct: 0 },
+  { q: "Kdo se narodil dříve?", options: ["Donald Trump", "Miloš Zeman"], correct: 1 },
+
+  // Okruh 3: Geografie & Populace (Kde žilo v roce 2020 více lidí?)
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Německo", "Francie"], correct: 0 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Japonsko", "Jižní Korea"], correct: 0 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Brazílie", "Argentina"], correct: 0 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Egypt", "Botswana"], correct: 0 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Mexiko", "Guatemala"], correct: 0 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Řecko", "Norsko"], correct: 0 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Irák", "Írán"], correct: 1 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Kanada", "Španělsko"], correct: 1 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Polsko", "Ukrajina"], correct: 1 },
+  { q: "Která země měla v roce 2020 více obyvatel?", options: ["Austrálie", "Nepál"], correct: 1 },
+
+  // Okruh 4: Věda & Příroda (Pravda / Nepravda)
+  { q: "Mars má pouze jeden měsíc, stejně jako Země.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Kurděje jsou způsobeny nedostatkem vitamínu C.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Mosaz je slitina železa a mědi.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Jeden gram rostlinného oleje má více kalorií než gram másla.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Helium je nejlehčí chemický prvek v periodické tabulce.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Běžné nachlazení je způsobeno bakteriemi.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Nejhlubší místo na Zemi leží v Tichém oceánu.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Střídání ročních období je způsobeno tím, že se Země přibližuje a vzdaluje od Slunce.", options: ["Pravda", "Nepravda"], correct: 1 },
+  { q: "Zvuk se ve vodě šíří rychleji než ve vzduchu.", options: ["Pravda", "Nepravda"], correct: 0 },
+  { q: "Den na Venuši trvá déle než její celý rok.", options: ["Pravda", "Nepravda"], correct: 0 }
+];
+
+const confidenceLevels = [0.55, 0.65, 0.75, 0.85, 0.95];
+const userAnswers = {};
+
+function initQuiz() {
+  const container = document.getElementById("questions-container");
+  container.innerHTML = "";
+
+  questionsData.forEach((item, index) => {
+    userAnswers[index] = { choice: null, conf: null };
+
+    const card = document.createElement("div");
+    card.className = "question-card";
+
+    const title = document.createElement("div");
+    title.className = "question-title";
+    title.innerText = `${index + 1}. ${item.q}`;
+    card.appendChild(title);
+
+    // Otázky / Volby
+    const optionsGroup = document.createElement("div");
+    optionsGroup.className = "options-group";
+
+    item.options.forEach((opt, optIdx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-option";
+      btn.innerText = opt;
+      btn.onclick = () => {
+        userAnswers[index].choice = optIdx;
+        Array.from(optionsGroup.children).forEach(c => c.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      optionsGroup.appendChild(btn);
+    });
+    card.appendChild(optionsGroup);
+
+    // Sekce Jistoty
+    const confSection = document.createElement("div");
+    confSection.className = "confidence-section";
+    
+    const confLabel = document.createElement("div");
+    confLabel.className = "confidence-label";
+    confLabel.innerText = "Jak moc jste si jistí odpovědí?";
+    confSection.appendChild(confLabel);
+
+    const confGroup = document.createElement("div");
+    confGroup.className = "confidence-group";
+
+    confidenceLevels.forEach(confVal => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-conf";
+      btn.innerText = `${Math.round(confVal * 100)} %`;
+      btn.onclick = () => {
+        userAnswers[index].conf = confVal;
+        Array.from(confGroup.children).forEach(c => c.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      confGroup.appendChild(btn);
+    });
+
+    confSection.appendChild(confGroup);
+    card.appendChild(confSection);
+
+    container.appendChild(card);
+  });
+}
+
+function calculateResults() {
+  const totalQuestions = questionsData.length;
+  let allAnswered = true;
+
+  for (let i = 0; i < totalQuestions; i++) {
+    if (userAnswers[i].choice === null || userAnswers[i].conf === null) {
+      allAnswered = false;
+      break;
+    }
+  }
+
+  const errorEl = document.getElementById("error-message");
+  if (!allAnswered) {
+    errorEl.style.display = "block";
+    return;
+  }
+  errorEl.style.display = "none";
+
+  let totalCorrect = 0;
+  let brierSum = 0;
+
+  const buckets = {};
+  confidenceLevels.forEach(lvl => {
+    buckets[lvl] = { count: 0, correct: 0 };
+  });
+
+  questionsData.forEach((q, idx) => {
+    const ans = userAnswers[idx];
+    const isCorrect = ans.choice === q.correct;
+    
+    if (isCorrect) totalCorrect++;
+
+    const pCorrect = isCorrect ? ans.conf : (1 - ans.conf);
+    brierSum += Math.pow(pCorrect - 1, 2);
+
+    buckets[ans.conf].count++;
+    if (isCorrect) buckets[ans.conf].correct++;
+  });
+
+  const overallAccuracyVal = (totalCorrect / totalQuestions) * 100;
+  const brierScoreVal = brierSum / totalQuestions;
+
+  document.getElementById("overall-accuracy").innerText = `${overallAccuracyVal.toFixed(1)} %`;
+  document.getElementById("brier-score").innerText = brierScoreVal.toFixed(3);
+
+  let overconfScore = 0;
+  let countUsed = 0;
+  confidenceLevels.forEach(lvl => {
+    if (buckets[lvl].count > 0) {
+      const actual = buckets[lvl].correct / buckets[lvl].count;
+      overconfScore += (lvl - actual);
+      countUsed++;
+    }
+  });
+
+  const avgOverconf = countUsed > 0 ? overconfScore / countUsed : 0;
+  let summaryText = "Dobrá kalibrace";
+  if (avgOverconf > 0.08) summaryText = "Výrazné přeceňování (Overconfident)";
+  else if (avgOverconf > 0.03) summaryText = "Mírné přeceňování";
+  else if (avgOverconf < -0.08) summaryText = "Výrazné podceňování (Underconfident)";
+  else if (avgOverconf < -0.03) summaryText = "Mírné podceňování";
+
+  document.getElementById("calibration-summary").innerText = summaryText;
+
+  const tbody = document.getElementById("breakdown-body");
+  tbody.innerHTML = "";
+
+  confidenceLevels.forEach(lvl => {
+    const b = buckets[lvl];
+    const actualPct = b.count > 0 ? ((b.correct / b.count) * 100).toFixed(1) + " %" : "N/A";
+    const targetPct = `${Math.round(lvl * 100)} %`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${Math.round(lvl * 100)} %</strong></td>
+      <td>${b.count}</td>
+      <td>${b.correct}</td>
+      <td>${actualPct}</td>
+      <td>${targetPct}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("quiz-form").style.display = "none";
+  document.getElementById("results").style.display = "block";
+
+  drawChart(buckets);
+}
+
+function drawChart(buckets) {
+  const canvas = document.getElementById("calibrationChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  const padding = 50;
+
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#e2e8f0";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#64748b";
+  ctx.font = "12px sans-serif";
+
+  function getX(val) {
+    return padding + ((val - 0.5) / 0.5) * (w - 2 * padding);
+  }
+  function getY(val) {
+    return h - padding - ((val - 0.5) / 0.5) * (h - 2 * padding);
+  }
+
+  for (let p = 0.5; p <= 1.001; p += 0.1) {
+    ctx.beginPath();
+    ctx.moveTo(getX(p), getY(0.5));
+    ctx.lineTo(getX(p), getY(1.0));
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(getX(0.5), getY(p));
+    ctx.lineTo(getX(1.0), getY(p));
+    ctx.stroke();
+
+    ctx.fillText(`${Math.round(p * 100)}%`, getX(p) - 12, h - padding + 20);
+    ctx.fillText(`${Math.round(p * 100)}%`, padding - 35, getY(p) + 4);
+  }
+
+  ctx.beginPath();
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = "#94a3b8";
+  ctx.lineWidth = 2;
+  ctx.moveTo(getX(0.5), getY(0.5));
+  ctx.lineTo(getX(1.0), getY(1.0));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const points = [];
+  confidenceLevels.forEach(lvl => {
+    if (buckets[lvl].count > 0) {
+      const acc = buckets[lvl].correct / buckets[lvl].count;
+      points.push({ x: lvl, y: acc, count: buckets[lvl].count });
+    }
+  });
+
+  if (points.length > 0) {
+    ctx.beginPath();
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 3;
+    points.forEach((pt, i) => {
+      const px = getX(pt.x);
+      const py = getY(pt.y);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+
+    points.forEach(pt => {
+      const px = getX(pt.x);
+      const py = getY(pt.y);
+
+      ctx.beginPath();
+      ctx.fillStyle = "#2563eb";
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillText(`n=${pt.count}`, px + 8, py - 8);
+    });
+  }
+
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillText("Udaná jistota", w / 2 - 30, h - 10);
+  
+  ctx.save();
+  ctx.translate(15, h / 2 + 40);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("Skutečná úspěšnost", 0, 0);
+  ctx.restore();
+}
+
+function resetQuiz() {
+  document.getElementById("quiz-form").style.display = "block";
+  document.getElementById("results").style.display = "none";
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  initQuiz();
+}
+
+window.onload = initQuiz;
+</script>
+
+</body>
+</html>
